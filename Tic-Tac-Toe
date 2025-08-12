@@ -1,0 +1,127 @@
+import time
+import random
+
+# ----------- Core Functions -----------
+
+def create_board():
+    return [[" "]*3 for _ in range(3)]
+
+def print_board(board):
+    print("   0   1   2")
+    for i, row in enumerate(board):
+        print(i, " | ".join(row))
+        if i < 2:
+            print("  ---+---+---")
+    print()
+
+def check_win(board, player):
+    return (
+        any(all(cell == player for cell in row) for row in board) or
+        any(all(board[r][c] == player for r in range(3)) for c in range(3)) or
+        all(board[i][i] == player for i in range(3)) or
+        all(board[i][2-i] == player for i in range(3))
+    )
+
+def get_moves(board):
+    return [(r, c) for r in range(3) for c in range(3) if board[r][c] == " "]
+
+def minimax(board, is_ai, ai_symbol, player_symbol):
+    if check_win(board, ai_symbol): return 1
+    if check_win(board, player_symbol): return -1
+    if not get_moves(board): return 0
+
+    scores = []
+    for r, c in get_moves(board):
+        board[r][c] = ai_symbol if is_ai else player_symbol
+        score = minimax(board, not is_ai, ai_symbol, player_symbol)
+        board[r][c] = " "
+        scores.append(score)
+
+    return max(scores) if is_ai else min(scores)
+
+def best_move(board, ai_symbol, player_symbol, difficulty):
+    moves = get_moves(board)
+    
+    # Easy: pick random move
+    if difficulty == "easy":
+        return random.choice(moves)
+    
+    # Medium: 50% random, 50% smart
+    if difficulty == "medium" and random.random() < 0.5:
+        return random.choice(moves)
+    
+    # Hard: perfect minimax move
+    best_score = -float('inf')
+    move = None
+    for r, c in moves:
+        board[r][c] = ai_symbol
+        score = minimax(board, False, ai_symbol, player_symbol)
+        board[r][c] = " "
+        if score > best_score:
+            best_score = score
+            move = (r, c)
+    return move
+
+# ----------- Game -----------
+
+def play_game():
+    board = create_board()
+    print("Welcome to TacToe!")
+    
+    # Player symbol choice
+    player_symbol = input("Choose your symbol (X or O): ").upper()
+    while player_symbol not in ["X", "O"]:
+        player_symbol = input("Invalid choice. Choose X or O: ").upper()
+    ai_symbol = "O" if player_symbol == "X" else "X"
+
+    # Difficulty choice
+    difficulty = input("Choose difficulty (easy / medium / hard): ").lower()
+    while difficulty not in ["easy", "medium", "hard"]:
+        difficulty = input("Invalid choice. Choose easy/medium/hard: ").lower()
+
+    # Who goes first
+    turn = input("Do you want to go first? (y/n): ").lower()
+    player_turn = (turn == "y")
+
+    print_board(board)
+
+    while True:
+        if player_turn:
+            try:
+                r, c = map(int, input(f"Enter your move ({player_symbol}) as row col: ").split())
+                if (r, c) not in get_moves(board):
+                    print("❌ Invalid move. Try again.\n")
+                    continue
+            except ValueError:
+                print("⚠ Please enter two numbers separated by a space.\n")
+                continue
+            board[r][c] = player_symbol
+        else:
+            print("AI is thinking...\n")
+            time.sleep(1)  # Simulate AI thinking
+            r, c = best_move(board, ai_symbol, player_symbol, difficulty)
+            board[r][c] = ai_symbol
+
+        print_board(board)
+
+        if check_win(board, player_symbol):
+            print("🎉 You win!")
+            break
+        elif check_win(board, ai_symbol):
+            print("😈 AI wins! Better luck next time.")
+            break
+        elif not get_moves(board):
+            print("🤝 It's a draw.")
+            break
+
+        player_turn = not player_turn
+
+# ----------- Replay Loop -----------
+
+if _name_ == "_main_":
+    while True:
+        play_game()
+        again = input("Play again? (y/n): ").lower()
+        if again != "y":
+            print("Thanks for playing! 👋")
+            break
