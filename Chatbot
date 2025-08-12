@@ -1,0 +1,111 @@
+import datetime
+import random
+import string
+
+# -------------------------
+# Intent dictionary
+# -------------------------
+intents = {
+    "greeting": {
+        "keywords": ["hi", "hello", "hey", "good morning", "good evening", "good afternoon"],
+        "responses": [
+            "Hello! How can I help you today?",
+            "Hi there! What can I do for you?",
+            "Hey! How's your day going?"
+        ]
+    },
+    "how_are_you": {
+        "keywords": ["how are you", "how you doing", "how's it going"],
+        "responses": [
+            "I'm doing great, thanks for asking! 😊 What about you?",
+            "All good here! How are you feeling today?",
+            "I'm happy to chat with you. How are you?"
+        ]
+    },
+    "name": {
+        "keywords": ["your name", "who are you"],
+        "responses": ["I'm Smart ChatBot, created by Gagan!"]
+    },
+    "help": {
+        "keywords": ["help", "what can you do", "commands"],
+        "responses": [
+            "You can ask me about the time, jokes, or just chat with me.",
+            "Try asking: 'Tell me the time', 'Tell me a joke', or 'How are you'."
+        ]
+    },
+    "time": {
+        "keywords": ["time", "current time", "tell time"],
+        "responses": []  # Will be generated dynamically
+    },
+    "joke": {
+        "keywords": ["joke", "funny", "make me laugh"],
+        "responses": []  # Will be generated dynamically
+    },
+    "goodbye": {
+        "keywords": ["bye", "goodbye", "see you", "exit", "quit", "stop"],
+        "responses": [
+            "Goodbye! Have a wonderful day ahead!",
+            "Bye! Take care!",
+            "See you soon! 👋"
+        ]
+    }
+}
+
+# Predefined jokes
+jokes = [
+    "Why don’t skeletons fight each other? They don’t have the guts! 😂",
+    "Why did the computer go to the doctor? Because it caught a virus! 🦠💻",
+    "I told my suitcase we weren’t going on vacation this year. Now it’s just emotional baggage. 🧳"
+]
+
+# Memory for conversation context
+context = {"last_intent": None}
+
+# -------------------------
+# Helper functions
+# -------------------------
+def clean_input(user_input):
+    """Lowercase input & remove punctuation/extra spaces."""
+    return user_input.lower().translate(str.maketrans("", "", string.punctuation)).strip()
+
+def match_intent(user_input):
+    """Match user input to an intent based on keywords."""
+    for intent, data in intents.items():
+        for keyword in data["keywords"]:
+            if keyword in user_input:
+                return intent
+    return None
+
+def chatbot_response(user_input):
+    cleaned = clean_input(user_input)
+    intent = match_intent(cleaned)
+    
+    # Contextual follow-up
+    if context["last_intent"] == "how_are_you" and intent is None:
+        return "Glad to hear! So, what would you like to talk about now?"
+    
+    # Dynamic answers
+    if intent == "time":
+        now = datetime.datetime.now().strftime("%I:%M %p")
+        return f"The current time is {now}."
+    elif intent == "joke":
+        return random.choice(jokes)
+    elif intent:
+        context["last_intent"] = intent
+        return random.choice(intents[intent]["responses"])
+    else:
+        return "I'm not sure I understand. Try asking for help to see what I can do."
+
+# -------------------------
+# Main Chat Loop
+# -------------------------
+if _name_ == "_main_":
+    print("🤖 Smart ChatBot is online! (Type 'bye' to exit)\n")
+    while True:
+        user = input("You: ")
+        response = chatbot_response(user)
+        print("Bot:", response)
+        
+        # Exit if goodbye intent detected
+        if match_intent(clean_input(user)) == "goodbye":
+            break
