@@ -1,0 +1,70 @@
+import pandas as pd
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
+from difflib import get_close_matches
+
+# Step 1: Movie dataset (can be replaced with a bigger real dataset later)
+movie_data = {
+    'Movie_Name': [
+        'Inception', 'Interstellar', 'The Dark Knight', 'Tenet', 'Shutter Island',
+        'The Prestige', 'Gravity', 'Avatar', 'The Matrix', 'Arrival'
+    ],
+    'Tags': [
+        'dream sci-fi thriller', 'space sci-fi emotional', 'action hero dark crime',
+        'time travel action spy', 'mystery mental drama', 'magic mystery suspense',
+        'space survival emotional', 'sci-fi alien war', 'virtual reality future',
+        'alien communication sci-fi'
+    ]
+}
+
+# Step 2: Load into DataFrame
+df = pd.DataFrame(movie_data)
+
+# Step 3: TF-IDF Vectorization
+vectorizer = TfidfVectorizer()
+tag_matrix = vectorizer.fit_transform(df['Tags'])
+
+# Step 4: Cosine similarity calculation
+similarity = cosine_similarity(tag_matrix)
+
+# Step 5: Recommendation function
+def suggest_movies(movie_name, top_n=3):
+    # Normalize input
+    movie_name = movie_name.strip().title()
+
+    # If not found, suggest closest matches
+    if movie_name not in df['Movie_Name'].values:
+        close_matches = get_close_matches(movie_name, df['Movie_Name'].values, n=3, cutoff=0.5)
+        if close_matches:
+            print(f"\nMovie not found. Did you mean: {', '.join(close_matches)}?")
+        else:
+            print("\nMovie not found in the database. Try another one.")
+        return
+
+    # Find index of the given movie
+    index = df[df['Movie_Name'] == movie_name].index[0]
+    score_list = list(enumerate(similarity[index]))
+    sorted_scores = sorted(score_list, key=lambda x: x[1], reverse=True)
+
+    print(f"\nBecause you liked '{movie_name}', here are the top {top_n} suggestions:\n")
+    for idx, _ in sorted_scores[1: top_n+1]:
+        print("➤", df.iloc[idx]['Movie_Name'])
+
+# Step 6: Interactive CLI
+if _name_ == "_main_":
+    print("🎬 Welcome to CineMatch!")
+    print("Your personal movie recommendation assistant.")
+    print("Type a movie name to get recommendations or type 'exit' to quit.\n")
+    
+    while True:
+        movie = input("Enter movie name: ").strip()
+        if movie.lower() == "exit":
+            print("\nThanks for using CineMatch! 🎥 Enjoy your movies!")
+            break
+        try:
+            top_n = int(input("How many recommendations do you want? (default=3): ") or 3)
+        except ValueError:
+            top_n = 3
+        
+        suggest_movies(movie, top_n)
+        print("\n" + "-"*50 + "\n")
